@@ -108,8 +108,9 @@ def get_enhanced_prompt(prompt, is_example):
         )
     elif is_example:
         return (
-            f"El usuario ha seleccionado un ejemplo: '{prompt}'. "
-            "Primero solicita anécdota y producto. No generes el email final hasta tener ambos."
+            f"El usuario seleccionó esta pregunta del menú: '{prompt}'. "
+            "Respóndela de forma directa, útil y conversacional, con ejemplos concretos. "
+            "Después de responder, invita al usuario a compartir su anécdota y producto para crear su email final."
         )
     return prompt
 
