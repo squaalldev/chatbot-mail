@@ -1,11 +1,11 @@
 ---
 license: mit
-title: Chatbot_Gemini_Streamlit
+title: Chatbot_Email
 sdk: streamlit
 emoji: 🏆
 colorFrom: red
 colorTo: yellow
 pinned: true
 sdk_version: 1.45.0
-short_description: Transform your audience's thoughts into persuasive bullets
+short_description: Write email with AI
 ---
