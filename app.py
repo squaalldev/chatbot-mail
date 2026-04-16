@@ -101,14 +101,15 @@ def get_enhanced_prompt(prompt, is_example):
     """Genera el prompt mejorado según el tipo de mensaje"""
     if is_greeting(prompt):
         return (
-            f"El usuario te ha saludado con '{prompt}'. Responde de forma breve y amable. "
-            "Luego solicita únicamente dos cosas para iniciar: "
-            "1) la anécdota/situación/observación y 2) el producto a promover."
+            "Responde ÚNICAMENTE con esta frase, sin agregar nada más: "
+            "\"Estoy listo para crear tu email. Por favor, proporcióname dos cosas: "
+            "1. La anécdota, situación u observación que quieres usar. "
+            "2. El producto que quieres promover.\""
         )
     elif is_example:
         return (
-            f"El usuario ha seleccionado un ejemplo: '{prompt}'. Guíalo para crear un email de storytelling. "
-            "Primero pide la anécdota y el producto, y no redactes el email final hasta tener ambos."
+            f"El usuario ha seleccionado un ejemplo: '{prompt}'. "
+            "Primero solicita anécdota y producto. No generes el email final hasta tener ambos."
         )
     return prompt
 
