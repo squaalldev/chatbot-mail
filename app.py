@@ -5,8 +5,7 @@ import joblib
 import streamlit as st
 from dotenv import load_dotenv
 from streamlit.runtime.scriptrunner import get_script_run_ctx
-from system_prompts import get_unified_reel_prompt  # Cambiar de get_unified_puv_prompt a get_unified_reel_prompt
-from reel_formulas import reel_formulas
+from system_prompts import get_unified_email_prompt
 from session_state import (
     SessionState,
     DEFAULT_GEMINI_MODEL,
@@ -98,65 +97,23 @@ def handle_chat_title(prompt):
         state.chat_title = past_chats[state.chat_id]
     joblib.dump(past_chats, user_past_chats_list_path)
 
-def detect_formula_selection(prompt):
-    """Detecta si el usuario eligió una fórmula por nombre o por número."""
-    normalized_prompt = prompt.lower().strip()
-    formula_names = list(reel_formulas.keys())
-
-    # Selección por número (1, 2, 3...)
-    if normalized_prompt.isdigit():
-        formula_index = int(normalized_prompt) - 1
-        if 0 <= formula_index < len(formula_names):
-            return formula_names[formula_index]
-
-    # Selección por nombre parcial/completo
-    for formula_name in formula_names:
-        if formula_name.lower() in normalized_prompt:
-            return formula_name
-
-    return None
-
-def get_user_context_for_formula(max_user_messages=6):
-    """Recupera contexto reciente del usuario para rellenar la fórmula elegida."""
-    recent_user_messages = [
-        m['content'] for m in state.messages
-        if m.get('role') == 'user'
-    ][-max_user_messages:]
-    return "\n".join(f"- {message}" for message in recent_user_messages)
-
-def build_formula_prompt(formula_name):
-    """Construye un prompt estricto usando la fórmula del diccionario."""
-    formula_data = reel_formulas[formula_name]
-    formula_description = formula_data.get('description', '').strip()
-    user_context = get_user_context_for_formula()
-
-    return f"""
-El usuario eligió explícitamente esta fórmula: "{formula_name}".
-
-APLICA ESTRICTAMENTE la siguiente estructura:
-{formula_description}
-
-Contexto real del usuario (úsalo para personalizar el guion):
-{user_context if user_context else '- Sin contexto previo suficiente.'}
-
-Instrucciones obligatorias de salida:
-1) Devuelve SOLO el texto final del Reel (sin encabezados ni etiquetas).
-2) Respeta el orden y los pasos de la fórmula elegida.
-3) Incluye un gancho potente y un cierre con llamado a la acción.
-4) Que tenga longitud aproximada de 60 segundos al leer.
-"""
-
 def get_enhanced_prompt(prompt, is_example):
     """Genera el prompt mejorado según el tipo de mensaje"""
-    selected_formula = detect_formula_selection(prompt)
-    if selected_formula:
-        st.session_state.selected_formula = selected_formula
-        return build_formula_prompt(selected_formula)
-
     if is_greeting(prompt):
-        return f"El usuario te ha saludado con '{prompt}'. Preséntate brevemente, explica qué es un Reel y por qué es importante, y haz las 3 preguntas iniciales para comenzar a crear el guion del Reel (audiencia ideal, producto/servicio, y llamado a la acción). Sé amigable, breve y toma la iniciativa como el experto que eres."
+        return (
+            "Responde ÚNICAMENTE con esta frase, sin agregar nada más: "
+            "\"Estoy listo para crear tu email. Por favor, compárteme cuatro cosas: "
+            "1. La anécdota, situación u observación (puede ser también un ángulo temático usando personajes de Disney/anime). "
+            "2. El producto que quieres promover. "
+            "3. El avatar de audiencia (a quién le estás escribiendo). "
+            "4. Tu nombre para usarlo en la firma.\""
+        )
     elif is_example:
-        return f"El usuario ha seleccionado un ejemplo: '{prompt}'. Responde de manera conversacional y sencilla, como si estuvieras hablando con un amigo. Evita tecnicismos innecesarios. Enfócate en dar información práctica que ayude al usuario a crear su Reel. Usa ejemplos concretos cuando sea posible. Termina tu respuesta con una pregunta que invite al usuario a compartir información sobre su negocio para poder ayudarle a crear su Reel personalizado."
+        return (
+            f"El usuario seleccionó esta pregunta del menú: '{prompt}'. "
+            "Respóndela de forma directa, útil y conversacional, con ejemplos concretos. "
+            "Después de responder, invita al usuario a compartir anécdota/ángulo, producto, avatar de audiencia y nombre de firma para crear su email final."
+        )
     return prompt
 
 def stream_response(response, message_placeholder, typing_indicator, stream_settings):
@@ -233,7 +190,7 @@ def display_initial_header():
         # Título con diseño responsivo (eliminado el símbolo ∞)
         st.markdown("""
             <div style='text-align: center; margin-top: -35px; width: 100%;'>
-                <h1 class='robocopy-title' style='width: 100%; text-align: center; color: white !important; font-size: clamp(2.5em, 5vw, 4em); line-height: 1.2;'>Reel Creator</h1>
+                <h1 class='robocopy-title' style='width: 100%; text-align: center; color: white !important; font-size: clamp(2.5em, 5vw, 4em); line-height: 1.2;'>Email Story Creator</h1>
             </div>
         """, unsafe_allow_html=True)
         
@@ -248,7 +205,7 @@ def display_initial_header():
     st.markdown("""
         <div style='text-align: center; width: 100%;'>
             <p style='font-size: 16px; background-color: transparent; padding: 12px; border-radius: 8px; margin-top: -20px; color: white; width: 100%; text-align: center;'>
-                🎥 Experto en crear Reels virales que convierten visualizaciones en clientes
+                ✉️ Experto en emails narrativos que conectan historias con ventas de forma natural
             </p>
         </div>
     """, unsafe_allow_html=True)
@@ -256,10 +213,10 @@ def display_initial_header():
 # Función para mostrar ejemplos de preguntas
 def display_examples():
     ejemplos = [
-        {"texto": "¿Cómo crear un Reel efectivo? 🎥", "prompt": "Explícame cómo puedo crear un Reel efectivo que enganche a mi audiencia desde el primer segundo"},
-        {"texto": "Ideas para Reels de mi negocio 💡", "prompt": "Necesito ideas creativas para crear Reels que promocionen mi negocio y productos"},
-        {"texto": "Estructura de un buen Reel ✨", "prompt": "¿Cuál es la mejor estructura para crear un Reel que mantenga la atención y genere conversiones?"},
-        {"texto": "¿Qué fórmula de Reel usar? 🤔", "prompt": "Ayúdame a elegir la fórmula más adecuada para mi Reel según mi tipo de negocio y objetivo"}
+        {"texto": "Estructura base de email ✍️", "prompt": "Enséñame la estructura ideal para un email de storytelling que convierta sin sonar a venta agresiva"},
+        {"texto": "Ideas de anécdotas 💡", "prompt": "Ayúdame a encontrar anécdotas cotidianas que pueda transformar en emails de marketing"},
+        {"texto": "Mejorar mi CTA 📩", "prompt": "Quiero llamadas a la acción contextuales y naturales para cerrar mejor mis emails"},
+        {"texto": "Conectar historia y producto 🔗", "prompt": "Muéstrame cómo construir un puente narrativo lógico entre una historia y mi producto"}
     ]
 
     # Crear los botones de ejemplo
@@ -351,7 +308,7 @@ elif st.session_state.active_chat_id != state.chat_id:
     st.session_state.hide_initial_menu = state.has_messages()
 
 # Inicializar el modelo y el chat
-system_prompt = get_unified_reel_prompt()
+system_prompt = get_unified_email_prompt()
 state.initialize_model(DEFAULT_GEMINI_MODEL, api_key=GOOGLE_API_KEY)
 state.initialize_chat(system_instruction=system_prompt)  # Siempre inicializar el chat después del modelo
 
@@ -364,7 +321,7 @@ for message in state.messages:
         st.markdown(message['content'])
 
 # Capturar entrada del usuario antes de renderizar el menú inicial
-user_prompt = st.chat_input('Describe tu audiencia y el objetivo de tu Reel...')
+user_prompt = st.chat_input('Comparte anécdota/ángulo, producto, avatar de audiencia y tu nombre de firma...')
 
 if state.has_messages():
     st.session_state.hide_initial_menu = True
