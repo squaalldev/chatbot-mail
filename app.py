@@ -102,16 +102,15 @@ def get_enhanced_prompt(prompt, is_example):
     if is_greeting(prompt):
         return (
             "Responde ÚNICAMENTE con esta frase, sin agregar nada más: "
-            "\"Estoy listo para crear tu email. Por favor, compárteme tres cosas: "
-            "1. La anécdota, situación u observación (puede ser también un ángulo temático usando personajes de Disney/anime). "
-            "2. El producto que quieres promover. "
-            "3. El avatar de audiencia (a quién le estás escribiendo).\""
+            "\"¡Perfecto! Empecemos por la primera: "
+            "¿Quién es tu audiencia ideal para este correo? "
+            "Descríbela con detalle (contexto, problema principal, deseo y nivel de conciencia).\""
         )
     elif is_example:
         return (
             f"El usuario seleccionó esta pregunta del menú: '{prompt}'. "
             "Respóndela de forma directa, útil y conversacional, con ejemplos concretos. "
-            "Después de responder, invita al usuario a compartir anécdota/ángulo, producto y avatar de audiencia para crear su email final."
+            "Después de responder, invita al usuario a iniciar el flujo de 5 preguntas en este orden: audiencia, producto, nombre, CTA y ángulo opcional."
         )
     return prompt
 
@@ -320,7 +319,7 @@ for message in state.messages:
         st.markdown(message['content'])
 
 # Capturar entrada del usuario antes de renderizar el menú inicial
-user_prompt = st.chat_input('Comparte anécdota/ángulo (puede incluir Disney/anime), producto y avatar de audiencia...')
+user_prompt = st.chat_input('Comparte audiencia, producto, tu nombre, CTA y ángulo opcional...')
 
 if state.has_messages():
     st.session_state.hide_initial_menu = True
