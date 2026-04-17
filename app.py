@@ -14,7 +14,7 @@ from session_state import (
 
 # Inicializar el estado de la sesión
 state = SessionState()
-STREAM_SETTINGS = {'batch_size': 1, 'delay_seconds': 0.03}
+STREAM_SETTINGS = {'batch_size': 1, 'delay_seconds': 0.01}
 user_past_chats_list_path = None
 
 def get_user_namespace():
