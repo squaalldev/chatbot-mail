@@ -264,6 +264,8 @@ with st.sidebar:
         st.rerun()
 
     st.caption('Sesiones')
+    if 'editing_chat_id' not in st.session_state:
+        st.session_state.editing_chat_id = None
 
     def chat_sort_key(chat_id):
         try:
@@ -278,36 +280,49 @@ with st.sidebar:
         button_label = f'● {chat_title}' if is_active_chat else chat_title
 
         session_col, menu_col = st.columns([6, 1])
+        is_editing = st.session_state.editing_chat_id == chat_id
+
         with session_col:
-            if st.button(
-                button_label,
-                key=f'chat_session_{index}_{chat_id}',
-                use_container_width=True,
-                type='primary' if is_active_chat else 'secondary',
-            ):
-                if state.chat_id != chat_id:
-                    state.chat_id = chat_id
-                    st.rerun()
-        with menu_col:
-            with st.popover("⋮", use_container_width=True):
-                st.caption(f"Sesión: {chat_title}")
-                rename_value = st.text_input(
-                    "Nuevo nombre",
+            if is_editing:
+                st.text_input(
+                    "Editar nombre de sesión",
                     value=chat_title,
                     key=f"rename_input_{chat_id}",
                     label_visibility="collapsed",
-                    placeholder="Escribe un nombre...",
                 )
-                if st.button("Renombrar", key=f"rename_btn_{chat_id}", use_container_width=True):
+            else:
+                if st.button(
+                    button_label,
+                    key=f'chat_session_{index}_{chat_id}',
+                    use_container_width=True,
+                    type='primary' if is_active_chat else 'secondary',
+                ):
+                    if state.chat_id != chat_id:
+                        state.chat_id = chat_id
+                        st.rerun()
+
+        with menu_col:
+            if is_editing:
+                if st.button("✅", key=f"save_rename_{chat_id}", use_container_width=True):
+                    rename_value = st.session_state.get(f"rename_input_{chat_id}", chat_title)
                     cleaned_name = " ".join(rename_value.strip().split())
                     if cleaned_name:
                         past_chats[chat_id] = cleaned_name
                         if state.chat_id == chat_id:
                             state.chat_title = cleaned_name
                         joblib.dump(past_chats, user_past_chats_list_path)
+                        st.session_state.editing_chat_id = None
                         st.rerun()
                     else:
                         st.warning("Nombre no válido.")
+                if st.button("✖", key=f"cancel_rename_{chat_id}", use_container_width=True):
+                    st.session_state.editing_chat_id = None
+                    st.rerun()
+            else:
+                with st.popover("⋯", use_container_width=True):
+                    if st.button("Renombrar", key=f"open_rename_{chat_id}", use_container_width=True):
+                        st.session_state.editing_chat_id = chat_id
+                        st.rerun()
 
     state.chat_title = past_chats.get(state.chat_id, f'SesiónChat-{state.chat_id}')
 
@@ -341,7 +356,7 @@ for message in state.messages:
         st.markdown(message['content'])
 
 # Capturar entrada del usuario antes de renderizar el menú inicial
-user_prompt = st.chat_input('Escribe tu idea de email o responde las preguntas guiadas: audiencia, producto, nombre, CTA y ángulo...')
+user_prompt = st.chat_input('Escribe aquí tus instrucciones')
 
 if state.has_messages():
     st.session_state.hide_initial_menu = True
