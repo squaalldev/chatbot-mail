@@ -211,10 +211,10 @@ def display_initial_header():
 # Función para mostrar ejemplos de preguntas
 def display_examples():
     ejemplos = [
-        {"texto": "Estructura base de email ✍️", "prompt": "Enséñame la estructura ideal para un email de storytelling que convierta sin sonar a venta agresiva"},
-        {"texto": "Ideas de anécdotas 💡", "prompt": "Ayúdame a encontrar anécdotas cotidianas que pueda transformar en emails de marketing"},
-        {"texto": "Mejorar mi CTA 📩", "prompt": "Quiero llamadas a la acción contextuales y naturales para cerrar mejor mis emails"},
-        {"texto": "Conectar historia y producto 🔗", "prompt": "Muéstrame cómo construir un puente narrativo lógico entre una historia y mi producto"}
+        {"texto": "Definir audiencia 🎯", "prompt": "Ayúdame a definir una audiencia concreta para este correo: dolor principal, deseo y nivel de conciencia."},
+        {"texto": "Propuesta de valor 💎", "prompt": "Convierte mi producto en una promesa clara de transformación sin listar características aburridas."},
+        {"texto": "CTA que convierte 🚀", "prompt": "Dame 3 opciones de CTA claras para este email, con baja fricción y orientadas a una sola acción."},
+        {"texto": "Asunto + gancho ✉️", "prompt": "Propón 5 asuntos y 3 ganchos de apertura para aumentar aperturas y clics de este correo."}
     ]
 
     # Crear los botones de ejemplo
@@ -287,7 +287,34 @@ with st.sidebar:
                 state.chat_id = chat_id
                 st.rerun()
 
-    state.chat_title = f'SesiónChat-{state.chat_id}'
+    if sorted_chat_ids:
+        st.markdown("---")
+        st.caption("Renombrar sesión")
+        selected_chat_to_rename = st.selectbox(
+            "Selecciona sesión",
+            options=sorted_chat_ids,
+            format_func=lambda chat_id: past_chats.get(chat_id, f"SesiónChat-{chat_id}"),
+            key="rename_chat_selector",
+        )
+        new_chat_name = st.text_input(
+            "Nuevo nombre",
+            value=past_chats.get(selected_chat_to_rename, ""),
+            key="rename_chat_input",
+            placeholder="Ej: Email lanzamiento mayo",
+        )
+        if st.button("Guardar nombre", key="save_chat_name", use_container_width=True):
+            cleaned_name = " ".join(new_chat_name.strip().split())
+            if cleaned_name:
+                past_chats[selected_chat_to_rename] = cleaned_name
+                if state.chat_id == selected_chat_to_rename:
+                    state.chat_title = cleaned_name
+                joblib.dump(past_chats, user_past_chats_list_path)
+                st.success("Nombre de sesión actualizado.")
+                st.rerun()
+            else:
+                st.warning("Escribe un nombre válido para la sesión.")
+
+    state.chat_title = past_chats.get(state.chat_id, f'SesiónChat-{state.chat_id}')
 
 # Cargar historial del chat
 state.load_chat_history()
@@ -319,7 +346,7 @@ for message in state.messages:
         st.markdown(message['content'])
 
 # Capturar entrada del usuario antes de renderizar el menú inicial
-user_prompt = st.chat_input('Comparte audiencia, producto, tu nombre, CTA y ángulo opcional...')
+user_prompt = st.chat_input('Escribe tu idea de email o responde las preguntas guiadas para redactarlo contigo...')
 
 if state.has_messages():
     st.session_state.hide_initial_menu = True
