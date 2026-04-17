@@ -192,10 +192,16 @@ class SessionState:
         except Exception as e:
             print(f"Error al enviar mensaje: {e}")
             # Reintentar una vez si hay error
-            self.initialize_chat()
-            if stream:
-                return self.chat.send_message_stream(prompt)
-            return self.chat.send_message(prompt)
+            try:
+                self.initialize_chat()
+                if stream:
+                    return self.chat.send_message_stream(prompt)
+                return self.chat.send_message(prompt)
+            except Exception as retry_error:
+                raise RuntimeError(
+                    f"Fallo al enviar mensaje tras reintento. Error original: {e}. "
+                    f"Error de reintento: {retry_error}"
+                ) from retry_error
     
     def generate_chat_title(self, prompt, model_name=None):
         """Genera un título para el chat basado en el primer mensaje"""

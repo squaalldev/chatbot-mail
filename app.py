@@ -1,6 +1,7 @@
 import time
 import os
 import uuid
+import traceback
 import joblib
 import streamlit as st
 from dotenv import load_dotenv
@@ -83,8 +84,14 @@ def process_message(prompt, is_example=False):
                 state.save_chat_history()
                 
         except Exception as e:
-            st.error(f"Error en el streaming: {str(e)}")
+            show_detailed_error("process_message", e)
             return
+
+def show_detailed_error(context, error):
+    """Muestra errores con contexto y traza para facilitar debug en producción."""
+    st.error(f"Ocurrió un error en {context}. Intenta de nuevo.")
+    with st.expander("Ver detalles técnicos del error"):
+        st.code(f"{type(error).__name__}: {error}\n\n{traceback.format_exc()}")
 
 def handle_chat_title(prompt):
     """Maneja la lógica del título del chat"""
@@ -133,7 +140,7 @@ def stream_response(response, message_placeholder, typing_indicator, stream_sett
                         message_placeholder.markdown(full_response + '▌')
                         pending_chars = 0
     except Exception as e:
-        st.error(f"Error en el streaming: {str(e)}")
+        show_detailed_error("stream_response", e)
         return ''
 
     if pending_chars > 0:
@@ -315,8 +322,12 @@ if (
     st.session_state.get('initialized_model_name') != DEFAULT_GEMINI_MODEL
     or getattr(state, 'client', None) is None
 ):
-    state.initialize_model(DEFAULT_GEMINI_MODEL, api_key=GOOGLE_API_KEY)
-    st.session_state.initialized_model_name = DEFAULT_GEMINI_MODEL
+    try:
+        state.initialize_model(DEFAULT_GEMINI_MODEL, api_key=GOOGLE_API_KEY)
+        st.session_state.initialized_model_name = DEFAULT_GEMINI_MODEL
+    except Exception as e:
+        show_detailed_error("initialize_model", e)
+        st.stop()
 
 should_reinitialize_chat = (
     state.chat is None
@@ -324,9 +335,13 @@ should_reinitialize_chat = (
     or st.session_state.get('initialized_system_prompt') != system_prompt
 )
 if should_reinitialize_chat:
-    state.initialize_chat(system_instruction=system_prompt)
-    st.session_state.initialized_chat_id = state.chat_id
-    st.session_state.initialized_system_prompt = system_prompt
+    try:
+        state.initialize_chat(system_instruction=system_prompt)
+        st.session_state.initialized_chat_id = state.chat_id
+        st.session_state.initialized_system_prompt = system_prompt
+    except Exception as e:
+        show_detailed_error("initialize_chat", e)
+        st.stop()
 
 # Mostrar mensajes del historial
 for message in state.messages:
