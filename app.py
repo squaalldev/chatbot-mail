@@ -110,7 +110,7 @@ def get_enhanced_prompt(prompt, is_example):
         return (
             f"El usuario seleccionó esta pregunta del menú: '{prompt}'. "
             "Respóndela de forma directa, útil y conversacional, con ejemplos concretos. "
-            "Después de responder, invita al usuario a iniciar el flujo de 5 preguntas en este orden: audiencia, producto, nombre, CTA y ángulo opcional."
+            "Después de responder, invita al usuario a iniciar el flujo de 5 preguntas en este orden: audiencia, producto, nombre, CTA y ángulo."
         )
     return prompt
 
@@ -277,42 +277,37 @@ with st.sidebar:
         is_active_chat = chat_id == state.chat_id
         button_label = f'● {chat_title}' if is_active_chat else chat_title
 
-        if st.button(
-            button_label,
-            key=f'chat_session_{index}_{chat_id}',
-            use_container_width=True,
-            type='primary' if is_active_chat else 'secondary',
-        ):
-            if state.chat_id != chat_id:
-                state.chat_id = chat_id
-                st.rerun()
-
-    if sorted_chat_ids:
-        st.markdown("---")
-        st.caption("Renombrar sesión")
-        selected_chat_to_rename = st.selectbox(
-            "Selecciona sesión",
-            options=sorted_chat_ids,
-            format_func=lambda chat_id: past_chats.get(chat_id, f"SesiónChat-{chat_id}"),
-            key="rename_chat_selector",
-        )
-        new_chat_name = st.text_input(
-            "Nuevo nombre",
-            value=past_chats.get(selected_chat_to_rename, ""),
-            key="rename_chat_input",
-            placeholder="Ej: Email lanzamiento mayo",
-        )
-        if st.button("Guardar nombre", key="save_chat_name", use_container_width=True):
-            cleaned_name = " ".join(new_chat_name.strip().split())
-            if cleaned_name:
-                past_chats[selected_chat_to_rename] = cleaned_name
-                if state.chat_id == selected_chat_to_rename:
-                    state.chat_title = cleaned_name
-                joblib.dump(past_chats, user_past_chats_list_path)
-                st.success("Nombre de sesión actualizado.")
-                st.rerun()
-            else:
-                st.warning("Escribe un nombre válido para la sesión.")
+        session_col, menu_col = st.columns([6, 1])
+        with session_col:
+            if st.button(
+                button_label,
+                key=f'chat_session_{index}_{chat_id}',
+                use_container_width=True,
+                type='primary' if is_active_chat else 'secondary',
+            ):
+                if state.chat_id != chat_id:
+                    state.chat_id = chat_id
+                    st.rerun()
+        with menu_col:
+            with st.popover("⋮", use_container_width=True):
+                st.caption(f"Sesión: {chat_title}")
+                rename_value = st.text_input(
+                    "Nuevo nombre",
+                    value=chat_title,
+                    key=f"rename_input_{chat_id}",
+                    label_visibility="collapsed",
+                    placeholder="Escribe un nombre...",
+                )
+                if st.button("Renombrar", key=f"rename_btn_{chat_id}", use_container_width=True):
+                    cleaned_name = " ".join(rename_value.strip().split())
+                    if cleaned_name:
+                        past_chats[chat_id] = cleaned_name
+                        if state.chat_id == chat_id:
+                            state.chat_title = cleaned_name
+                        joblib.dump(past_chats, user_past_chats_list_path)
+                        st.rerun()
+                    else:
+                        st.warning("Nombre no válido.")
 
     state.chat_title = past_chats.get(state.chat_id, f'SesiónChat-{state.chat_id}')
 
@@ -346,7 +341,7 @@ for message in state.messages:
         st.markdown(message['content'])
 
 # Capturar entrada del usuario antes de renderizar el menú inicial
-user_prompt = st.chat_input('Escribe tu idea de email o responde las preguntas guiadas para redactarlo contigo...')
+user_prompt = st.chat_input('Escribe tu idea de email o responde las preguntas guiadas: audiencia, producto, nombre, CTA y ángulo...')
 
 if state.has_messages():
     st.session_state.hide_initial_menu = True
