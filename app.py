@@ -261,9 +261,12 @@ with st.sidebar:
         state.chat_id = new_chat_id
         st.session_state.pending_example_prompt = None
         st.session_state.hide_initial_menu = False
+        st.session_state.editing_chat_id = None
         st.rerun()
 
     st.caption('Sesiones')
+    if 'editing_chat_id' not in st.session_state:
+        st.session_state.editing_chat_id = None
 
     def chat_sort_key(chat_id):
         try:
@@ -304,6 +307,7 @@ elif st.session_state.active_chat_id != state.chat_id:
     st.session_state.active_chat_id = state.chat_id
     st.session_state.pending_example_prompt = None
     st.session_state.hide_initial_menu = state.has_messages()
+    st.session_state.editing_chat_id = None
 
 # Inicializar el modelo y el chat
 system_prompt = get_unified_email_prompt()
