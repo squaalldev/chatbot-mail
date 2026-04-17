@@ -14,7 +14,7 @@ from session_state import (
 
 # Inicializar el estado de la sesión
 state = SessionState()
-STREAM_SETTINGS = {'batch_size': 1, 'delay_seconds': 0.01}
+STREAM_SETTINGS = {'batch_size': 24, 'delay_seconds': 0.0}
 user_past_chats_list_path = None
 
 def get_user_namespace():
@@ -261,6 +261,7 @@ with st.sidebar:
         state.chat_id = new_chat_id
         st.session_state.pending_example_prompt = None
         st.session_state.hide_initial_menu = False
+        st.session_state.editing_chat_id = None
         st.rerun()
 
     st.caption('Sesiones')
@@ -299,6 +300,7 @@ with st.sidebar:
                 ):
                     if state.chat_id != chat_id:
                         state.chat_id = chat_id
+                        st.session_state.editing_chat_id = None
                         st.rerun()
 
         with menu_col:
@@ -341,11 +343,26 @@ elif st.session_state.active_chat_id != state.chat_id:
     st.session_state.active_chat_id = state.chat_id
     st.session_state.pending_example_prompt = None
     st.session_state.hide_initial_menu = state.has_messages()
+    st.session_state.editing_chat_id = None
 
 # Inicializar el modelo y el chat
 system_prompt = get_unified_email_prompt()
-state.initialize_model(DEFAULT_GEMINI_MODEL, api_key=GOOGLE_API_KEY)
-state.initialize_chat(system_instruction=system_prompt)  # Siempre inicializar el chat después del modelo
+if (
+    st.session_state.get('initialized_model_name') != DEFAULT_GEMINI_MODEL
+    or getattr(state, 'client', None) is None
+):
+    state.initialize_model(DEFAULT_GEMINI_MODEL, api_key=GOOGLE_API_KEY)
+    st.session_state.initialized_model_name = DEFAULT_GEMINI_MODEL
+
+should_reinitialize_chat = (
+    state.chat is None
+    or st.session_state.get('initialized_chat_id') != state.chat_id
+    or st.session_state.get('initialized_system_prompt') != system_prompt
+)
+if should_reinitialize_chat:
+    state.initialize_chat(system_instruction=system_prompt)
+    st.session_state.initialized_chat_id = state.chat_id
+    st.session_state.initialized_system_prompt = system_prompt
 
 # Mostrar mensajes del historial
 for message in state.messages:
